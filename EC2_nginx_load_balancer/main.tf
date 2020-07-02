@@ -5,6 +5,7 @@ provider "aws" {
 
 resource "aws_default_vpc" "default_vpc" {}
 
+
 resource "aws_default_subnet" "default_az1" {
   availability_zone = "eu-central-1a"
   tags = {
@@ -18,6 +19,14 @@ resource "aws_default_subnet" "default_az2" {
     "Terraform" : "true"
   }
 }
+
+resource "aws_default_subnet" "default_az3" {
+  availability_zone = "eu-central-1c"
+  tags = {
+    "Terraform" : "true"
+  }
+}
+
 
 resource "aws_security_group" "tf_sec_group" {
   name        = "tf_sec_group"
@@ -49,6 +58,7 @@ resource "aws_security_group" "tf_sec_group" {
   }
 }
 
+
 resource "aws_key_pair" "deploy_key" {
   key_name   = "Terraform-test"
   public_key = file("~/.ssh/aws-ubuntu-1804.pub")
@@ -59,8 +69,10 @@ resource "aws_instance" "prod_web" {
 
   ami           = "ami-08602dbb603c18eff"
   instance_type = "t2.micro"
+  key_name      = aws_key_pair.deploy_key.key_name
 
-  # To use existing key from aws
+  /* If you want to use existing key_name from aws, you should remove "aws_key_pair" resource.
+    It's just confusing and maybe they conflict */
   # key_name      = "aws-ubuntu-18.04"
 
   vpc_security_group_ids = [
@@ -73,20 +85,20 @@ resource "aws_instance" "prod_web" {
   }
 }
 
-resource "aws_eip_association" "prod_web" {
-  instance_id   = aws_instance.prod_web[0].id
-  allocation_id = aws_eip.prod_web.id
-}
-resource "aws_eip" "prod_web" {
-  tags = {
-    "Terraform" : "true"
-  }
-}
+# resource "aws_eip_association" "prod_web" {
+#   instance_id   = aws_instance.prod_web[0].id
+#   allocation_id = aws_eip.prod_web.id
+# }
+# resource "aws_eip" "prod_web" {
+#   tags = {
+#     "Terraform" : "true"
+#   }
+# }
 
 resource "aws_elb" "prod_web" {
   name            = "prod-web"
   instances       = aws_instance.prod_web.*.id
-  subnets         = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id]
+  subnets         = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id, aws_default_subnet.default_az3.id]
   security_groups = [aws_security_group.tf_sec_group.id]
 
   listener {
