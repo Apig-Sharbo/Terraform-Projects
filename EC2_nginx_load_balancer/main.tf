@@ -71,8 +71,11 @@ resource "aws_instance" "prod_web" {
   instance_type = "t2.micro"
   key_name      = aws_key_pair.deploy_key.key_name
 
-  /* If you want to use existing key_name from aws, you should remove "aws_key_pair" resource.
-    It's just confusing and maybe they conflict */
+  /*
+  If you want to use existing key_name from aws,
+  you should remove "aws_key_pair" resource.
+  It's just confusing.
+  */
   # key_name      = "aws-ubuntu-18.04"
 
   vpc_security_group_ids = [
@@ -96,9 +99,14 @@ resource "aws_instance" "prod_web" {
 # }
 
 resource "aws_elb" "prod_web" {
-  name            = "prod-web"
-  instances       = aws_instance.prod_web.*.id
-  subnets         = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id, aws_default_subnet.default_az3.id]
+  name      = "prod-web"
+  instances = aws_instance.prod_web.*.id
+
+  subnets = [
+    aws_default_subnet.default_az1.id,
+    aws_default_subnet.default_az2.id,
+    aws_default_subnet.default_az3.id,
+  ]
   security_groups = [aws_security_group.tf_sec_group.id]
 
   listener {
